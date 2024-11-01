@@ -20,6 +20,7 @@
 #define CAM_PIN_VSYNC   25
 #define CAM_PIN_HREF    23
 #define CAM_PIN_PCLK    22
+#define FLASH_GPIO_PIN  4
 
 // If this is a "1", then send the raw image from the ESP-32 over the serial port. If 0, don't.
 #define CALIBRATION_MODE 1

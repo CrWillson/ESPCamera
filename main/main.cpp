@@ -5,13 +5,11 @@
 #include <iostream>
 #include <algorithm>
 
-
 // Esp imports
 #include <esp_err.h>
 #include <esp_spiffs.h>
 #include <esp_log.h>
 #include "sdkconfig.h"
-#include "esp_log.h"
 #include "driver/gpio.h"
 #include "driver/uart.h"
 #include "esp_sleep.h"
@@ -22,6 +20,8 @@
 #include "sdmmc_cmd.h"
 #include "driver/sdmmc_host.h"
 #include "driver/sdspi_host.h"
+#include "ff.h"
+#include <dirent.h>
 
 // FreeRTOS imports
 #include "freertos/FreeRTOS.h"
@@ -37,6 +37,10 @@ extern "C" {
 void app_main(void);
 }
 
+
+#define BASE_PATH "/sdcard"
+#define FILE_PREFIX "IMAGE"
+#define FILE_EXTENSION ".BIN"
 
 // Global variables
 camera_fb_t* fb = nullptr;
@@ -85,6 +89,35 @@ esp_err_t mount_sd_card() {
 }
 
 
+// Function to find the next available image filename
+void get_next_filename(char *filename) {
+    static const char *TAG = "CAMERA_SD";
+
+    int max_number = 0;
+    DIR *dir = opendir(BASE_PATH);
+    if (dir == NULL) {
+        ESP_LOGE(TAG, "Failed to open directory: %s", BASE_PATH);
+        return;
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_REG) {
+            int num;
+            if (sscanf(entry->d_name, FILE_PREFIX "%d" FILE_EXTENSION, &num) == 1) {
+                if (num > max_number) {
+                    max_number = num;
+                }
+            }
+        }
+    }
+    closedir(dir);
+
+    // Generate the next filename
+    sprintf(filename, BASE_PATH "/" FILE_PREFIX "%d" FILE_EXTENSION, max_number + 1);
+}
+
+
 esp_err_t write_str_to_sd(std::string data_str, std::string file_name) {
     static const char *TAG = "SD_Write";
 
@@ -112,35 +145,40 @@ esp_err_t write_str_to_sd(std::string data_str, std::string file_name) {
     return ESP_OK;
 }
 
-void capture_and_save_image(std::string file_name) {
+
+esp_err_t capture_and_save_image() {
     static const char *TAG = "Camera_Sample";
 
-    camera_fb_t *fb = esp_camera_fb_get();
-    if (!fb) {
+    // Capture a picture
+    camera_fb_t *pic = esp_camera_fb_get();
+    if (!pic) {
         ESP_LOGE(TAG, "Camera capture failed");
-        return;
+        return ESP_FAIL;
     }
 
-    // Construct the file path
-    std::string file_path = MOUNT_POINT;
-    file_path += file_name;
+    // Get the next available filename
+    char filename[32];
+    get_next_filename(filename);
 
     // Open file for writing
-    FILE *file = fopen("/sdcard/image1.bin", "wb");
-    if (file == NULL) {
-        ESP_LOGE(TAG, "Failed to open file for writing");
-        esp_camera_fb_return(fb);
-        return;
+    FILE *file = fopen(filename, "wb");
+    if (!file) {
+        ESP_LOGE(TAG, "Failed to open file for writing: %s", filename);
+        esp_camera_fb_return(pic);
+        return ESP_FAIL;
     }
 
     // Write image data to file
-    fwrite(fb->buf, 1, fb->len, file);
+    fwrite(pic->buf, 1, pic->len, file);
     fclose(file);
-    ESP_LOGI(TAG, "Image saved");
+    ESP_LOGI(TAG, "Image saved as: %s", filename);
 
-    // Return the frame buffer
-    esp_camera_fb_return(fb);
+    // Return the frame buffer back to the driver for reuse
+    esp_camera_fb_return(pic);
+
+    return ESP_OK;
 }
+
 
 void config_cam()
 {    
@@ -166,7 +204,7 @@ void config_cam()
     config.pin_pwdn = CAM_PIN_PWDN;
     config.pin_reset = CAM_PIN_RESET;
     config.xclk_freq_hz = 20000000;
-    config.pixel_format = PIXFORMAT_GRAYSCALE;  // Set the pixel format
+    config.pixel_format = PIXFORMAT_RGB565;  // Set the pixel format
 
     // Set frame size to 96x96
     config.frame_size = FRAMESIZE_96X96;
@@ -186,14 +224,19 @@ void config_cam()
 /// @brief The entry-point.
 void app_main(void)
 {
+    static const char *TAG = "CAMERA_SD";
     config_cam();
 
     if (mount_sd_card() == ESP_OK) {
-        capture_and_save_image("/imagecolor.bin");
+        capture_and_save_image();
+
+        // Unmount the SD card
+        esp_vfs_fat_sdmmc_unmount();
+        ESP_LOGI(TAG, "SD card unmounted");
     } else {
         static const char *TAG = "SD_Write";
         ESP_LOGE(TAG, "Failed to mount SD card");
     }
-    
-    esp_deep_sleep_start();
+
+    gpio_set_level(GPIO_NUM_4, 0);
 }
