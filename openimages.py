@@ -125,8 +125,8 @@ def applyWhiteContour(img, mask):
 
     #cv2.line(img, (55,55), (96,96), (255,0,0), 1)
     cv2.line(img, (0,55), (96,55), (255,0,0), 1)
-    cv2.drawContours(img, contour, -1, (225,255,0), 1)
-    cv2.circle(img, (cx, cy), 3, (255, 0, 0), -1)
+    cv2.drawContours(img, contour, -1, (255,30,0), 1)
+    cv2.circle(img, (cx, cy), 3, (255, 0, 255), -1)
     cv2.line(img, (x1, y1), (x2, y2), (0, 255, 0), 1)
 
     return img
