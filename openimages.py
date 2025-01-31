@@ -69,8 +69,8 @@ def open_image(file_path):
         return np.frombuffer(image_data_color, dtype=np.uint8).reshape((96, 96, 1))
 
 folder = "images/"
-num_images = 52
-file_names = [f"{folder}IMAGE{i+1}.BIN" for i in range(num_images)]
+num_images = 70
+file_names = [f"{folder}IMAGE{i}.BIN" for i in range(62, num_images + 1)]
 
 # Open the images
 imagesRaw = [rgb565_to_rgb888(open_image(file)) for file in file_names]
@@ -117,7 +117,7 @@ def applyWhiteCrop(img, cropHeight = 55):
     return whiteImg
 
 def applyWhiteMask(img):
-    mask = (img[:, :, 0] > 170) & (img[:, :, 1] > 170) & (img[:, :, 2] > 100)
+    mask = (img[:, :, 0] > 180) & (img[:, :, 1] > 180) & (img[:, :, 2] > 110)
     mask = mask.astype(np.uint8) * 255
     whiteImg = np.zeros_like(img)
     whiteImg[mask > 0] = img[mask > 0]
@@ -247,7 +247,7 @@ carMaskedImgs = [processCarImg(img) for img in imagesRaw]
 
 # Display the images
 for i, image in enumerate(imagesRaw):
-    fig,ax = plt.subplots(2, 2, figsize=(5,5))
+    fig,ax = plt.subplots(3, 2, figsize=(5,5))
     fig.canvas.manager.set_window_title(f"Image {i}")
     
     ax[0,0].imshow(image)
@@ -264,7 +264,15 @@ for i, image in enumerate(imagesRaw):
 
     ax[1,1].imshow(whiteMaskedImgsV2[i])
     ax[1,1].set_title('new white image')
-    ax[1,1].axis('off') 
+    ax[1,1].axis('off')
+    
+    ax[2,0].imshow(carMaskedImgs[i])
+    ax[2,0].set_title('car image')
+    ax[2,0].axis('off')  
+    
+    ax[2,1].imshow(carMaskedImgs[i])
+    ax[2,1].set_title('car image')
+    ax[2,1].axis('off')
 
     plt.tight_layout()
 
