@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.image import imread
 import cv2
 import math
+import os
 
 # Calculate centroid and line through a contour
 def processContour(contour):
@@ -59,19 +60,34 @@ def rgb565_to_rgb888(image_rgb565):
 
 def open_image(file_path):
     # Load the RGB565 binary image data
-    with open(file_path, 'rb') as file:
-        image_data_color = file.read()
+    if (file_path.endswith(".BIN")):
+        with open(file_path, 'rb') as file:
+            image_data_color = file.read()
 
-    # Convert the binary data to a numpy array and reshape it to 96x96x2
-    try:
-        return np.frombuffer(image_data_color, dtype=np.uint8).reshape((96, 96, 2))
-    except:
-        return np.frombuffer(image_data_color, dtype=np.uint8).reshape((96, 96, 1))
+        # Convert the binary data to a numpy array and reshape it to 96x96x2
+        try:
+            return np.frombuffer(image_data_color, dtype=np.uint8).reshape((96, 96, 2))
+        except:
+            return np.frombuffer(image_data_color, dtype=np.uint8).reshape((96, 96, 1))
+    else:
+        with open(file_path, 'rb') as file:
+            image_data_color = file.read()
+
+        # Convert the decimal data to a numpy array and reshape it to 96x96x2
+        image_data_color = np.fromstring(image_data_color.decode('utf-8'), sep=' ', dtype=np.uint16)
+        image_data_color.reshape((96, 96, 1))
+        # Split each 16-bit integer into two 8-bit integers
+        high_byte = (image_data_color >> 8) & 0xFF
+        low_byte = image_data_color & 0xFF
+
+        # Combine the high and low bytes into a 96x96x2 array
+        image_data_color = np.stack((high_byte, low_byte), axis=-1)
+        return image_data_color.reshape((96, 96, 2))
+
 
 folder = "images/"
-num_images = 70
-file_names = [f"{folder}IMAGE{i}.BIN" for i in range(62, num_images + 1)]
-
+file_names = [os.path.join(folder, f) for f in os.listdir(folder)]
+    
 # Open the images
 imagesRaw = [rgb565_to_rgb888(open_image(file)) for file in file_names]
 
@@ -276,54 +292,6 @@ for i, image in enumerate(imagesRaw):
 
     plt.tight_layout()
 
-
-"""
-whiteLineRaw = imagesRaw[8]
-croppedWhiteImg = applyWhiteCrop(whiteLineRaw)
-maskedWhiteImg, whiteMask = applyWhiteMask(croppedWhiteImg)
-contouredWhiteImg = applyWhiteContour(maskedWhiteImg, whiteMask)
-
-redLineRaw = imagesRaw[19]
-maskedRedImg, redMask = applyRedMask(redLineRaw)
-stopBoxRedImg = np.copy(maskedRedImg)
-drawStopBox(stopBoxRedImg, redMask)
-
-fig,ax = plt.subplots(2, 2, figsize=(5,5))
-fig.canvas.manager.set_window_title(f"White Line Processing Pipeline")
-
-ax[0,0].imshow(whiteLineRaw)
-ax[0,0].set_title("1. Raw image")
-ax[0,0].axis('off')
-
-ax[0,1].imshow(croppedWhiteImg)
-ax[0,1].set_title("2. Apply crop")
-ax[0,1].axis('off')
-
-ax[1,0].imshow(maskedWhiteImg)
-ax[1,0].set_title("3. Mask white pixels")
-ax[1,0].axis('off')
-
-ax[1,1].imshow(contouredWhiteImg)
-ax[1,1].set_title("4. Find largest contour")
-ax[1,1].axis('off')
-
-fig,ax = plt.subplots(1, 3, figsize=(10,2.5))
-fig.canvas.manager.set_window_title(f"Red Line Processing Pipeline")
-
-ax[0].imshow(redLineRaw)
-ax[0].set_title("1. Raw image")
-ax[0].axis('off')
-
-ax[1].imshow(maskedRedImg)
-ax[1].set_title("2. Mask red pixels")
-ax[1].axis('off')
-
-ax[2].imshow(stopBoxRedImg)
-ax[2].set_title("3. Check Stop Box")
-ax[2].axis('off')
-
-plt.tight_layout()
-"""
 
 plt.show()
 print("done")
