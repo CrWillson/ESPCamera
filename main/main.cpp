@@ -221,9 +221,20 @@ esp_err_t capture_and_save_image_nocv() {
     return ESP_OK;
 }
 
+esp_err_t capture_image(camera_fb_t* pic) {
+    static const char *TAG = "Camera_Sample";
 
-void config_cam()
-{    
+    // Capture a picture
+    pic = esp_camera_fb_get();
+    if (!pic) {
+        ESP_LOGE(TAG, "Camera capture failed");
+        return ESP_FAIL;
+    }
+
+    return ESP_OK;
+}
+
+void config_cam() {    
     constexpr char *TAG = "CAM_INIT";
     
     camera_config_t config;
