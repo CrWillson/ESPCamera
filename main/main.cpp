@@ -41,6 +41,7 @@ void app_main(void);
 #define BASE_PATH "/sdcard"
 #define FILE_PREFIX "IMAGE"
 #define FILE_EXTENSION ".BIN"
+#define CONFIG_FILE "/sdcard/config.txt"
 
 // Global variables
 camera_fb_t* fb = nullptr;
@@ -88,35 +89,33 @@ esp_err_t mount_sd_card() {
     return ESP_OK;
 }
 
-
 // Function to find the next available image filename
 void get_next_filename(char *filename) {
     static const char *TAG = "CAMERA_SD";
 
-    int max_number = 0;
-    DIR *dir = opendir(BASE_PATH);
-    if (dir == NULL) {
-        ESP_LOGE(TAG, "Failed to open directory: %s", BASE_PATH);
-        return;
-    }
+    int file_number = 0;
+    FILE* config_file = fopen(CONFIG_FILE, "r");
 
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type == DT_REG) {
-            int num;
-            if (sscanf(entry->d_name, FILE_PREFIX "%d" FILE_EXTENSION, &num) == 1) {
-                if (num > max_number) {
-                    max_number = num;
-                }
-            }
+    if (config_file) {
+        if (fscanf(config_file, "%d", &file_number) != 1) {
+            ESP_LOGE(TAG, "Failed to read file number from config file");
         }
+        fclose(config_file);
+    } else {
+        ESP_LOGI(TAG, "Config file not found, starting from 0");
     }
-    closedir(dir);
 
-    // Generate the next filename
-    sprintf(filename, BASE_PATH "/" FILE_PREFIX "%d" FILE_EXTENSION, max_number + 1);
+    sprintf(filename, BASE_PATH "/" FILE_PREFIX "%d" FILE_EXTENSION, file_number);
+    ESP_LOGI(TAG, "Next filename: %s", filename);
+
+    config_file = fopen(CONFIG_FILE, "w");
+    if (config_file) {
+        fprintf(config_file, "%d", file_number + 1);
+        fclose(config_file);
+    } else {
+        ESP_LOGE(TAG, "Failed to open config file for writing");
+    }
 }
-
 
 esp_err_t write_str_to_sd(std::string data_str, std::string file_name) {
     static const char *TAG = "SD_Write";
@@ -144,7 +143,6 @@ esp_err_t write_str_to_sd(std::string data_str, std::string file_name) {
     ESP_LOGI(TAG, "File written successfully");
     return ESP_OK;
 }
-
 
 esp_err_t capture_and_save_image() {
     static const char *TAG = "Camera_Sample";
@@ -179,9 +177,20 @@ esp_err_t capture_and_save_image() {
     return ESP_OK;
 }
 
+esp_err_t capture_image(camera_fb_t* pic) {
+    static const char *TAG = "Camera_Sample";
 
-void config_cam()
-{    
+    // Capture a picture
+    pic = esp_camera_fb_get();
+    if (!pic) {
+        ESP_LOGE(TAG, "Camera capture failed");
+        return ESP_FAIL;
+    }
+
+    return ESP_OK;
+}
+
+void config_cam() {    
     constexpr char *TAG = "CAM_INIT";
     
     camera_config_t config;
@@ -228,6 +237,16 @@ void app_main(void)
     config_cam();
 
     if (mount_sd_card() == ESP_OK) {
+        camera_fb_t *throwaway = nullptr;
+        for (int i = 0; i < 5; i++) {
+            capture_image(throwaway);
+            if (throwaway) {
+                esp_camera_fb_return(throwaway); // Return the frame buffer to the driver
+            }
+            ESP_LOGI(TAG, "Throwaway image captured %d", i);
+            vTaskDelay(500 / portTICK_PERIOD_MS); // Delay to allow for image capture
+        }
+
         capture_and_save_image();
 
         // Unmount the SD card
