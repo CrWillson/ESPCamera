@@ -29,6 +29,7 @@
 #include "freertos/portmacro.h"
 
 #include "constants.hpp"
+#include "opencv2.hpp"
 
 
 // This is necessary because it allows ESP-IDF to find the main function,
@@ -37,14 +38,13 @@ extern "C" {
 void app_main(void);
 }
 
-
 #define BASE_PATH "/sdcard"
 #define FILE_PREFIX "IMAGE"
 #define FILE_EXTENSION ".BIN"
+#define CONFIG_FILE "/sdcard/config.txt"
 
 // Global variables
 camera_fb_t* fb = nullptr;
-
 
 // Function to initialize the SD card
 esp_err_t mount_sd_card() {
@@ -88,65 +88,107 @@ esp_err_t mount_sd_card() {
     return ESP_OK;
 }
 
-
 // Function to find the next available image filename
 void get_next_filename(char *filename) {
     static const char *TAG = "CAMERA_SD";
 
-    int max_number = 0;
-    DIR *dir = opendir(BASE_PATH);
-    if (dir == NULL) {
-        ESP_LOGE(TAG, "Failed to open directory: %s", BASE_PATH);
-        return;
-    }
+    int file_number = 0;
+    FILE* config_file = fopen(CONFIG_FILE, "r");
 
-    struct dirent *entry;
-    while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type == DT_REG) {
-            int num;
-            if (sscanf(entry->d_name, FILE_PREFIX "%d" FILE_EXTENSION, &num) == 1) {
-                if (num > max_number) {
-                    max_number = num;
-                }
-            }
+    if (config_file) {
+        if (fscanf(config_file, "%d", &file_number) != 1) {
+            ESP_LOGE(TAG, "Failed to read file number from config file");
         }
+        fclose(config_file);
+    } else {
+        ESP_LOGI(TAG, "Config file not found, starting from 0");
     }
-    closedir(dir);
 
-    // Generate the next filename
-    sprintf(filename, BASE_PATH "/" FILE_PREFIX "%d" FILE_EXTENSION, max_number + 1);
+    sprintf(filename, BASE_PATH "/" FILE_PREFIX "%d" FILE_EXTENSION, file_number);
+    ESP_LOGI(TAG, "Next filename: %s", filename);
+
+    config_file = fopen(CONFIG_FILE, "w");
+    if (config_file) {
+        fprintf(config_file, "%d", file_number + 1);
+        fclose(config_file);
+    } else {
+        ESP_LOGE(TAG, "Failed to open config file for writing");
+    }
+
 }
 
+esp_err_t get_frame(cv::Mat& image) {
+    static const char *TAG = "Camera_OpenCV";
 
-esp_err_t write_str_to_sd(std::string data_str, std::string file_name) {
-    static const char *TAG = "SD_Write";
-
-    // Construct the file path
-    std::string file_path = MOUNT_POINT;
-    file_path += file_name;
-
-    // Open file for writing
-    FILE *file = fopen(file_path.c_str(), "w");
-    if (file == nullptr) {
-        ESP_LOGE(TAG, "Failed to open file for writing");
+    // Capture a picture
+    auto* fb = esp_camera_fb_get();
+    if (!fb) {
+        ESP_LOGE(TAG, "Camera capture failed");
         return ESP_FAIL;
     }
 
-    // Write data string to file
-    if (fprintf(file, "%s", data_str.c_str()) < 0) {
-        ESP_LOGE(TAG, "Failed to write to file");
-        fclose(file);
+    // Ensure the format is RGB565
+    if (fb->format != PIXFORMAT_RGB565) {
+        ESP_LOGE(TAG, "Unsupported format. Expected RGB565.");
+        esp_camera_fb_return(fb);
         return ESP_FAIL;
     }
 
-    // Close the file and return success
-    fclose(file);
-    ESP_LOGI(TAG, "File written successfully");
+    int width = fb->width;
+    int height = fb->height;
+
+    // Create an OpenCV Mat with type CV_8UC2 (8-bit, 2 channels per pixel)
+    image.create(height, width, CV_8UC2);
+
+    // Copy the RGB565 data directly into the OpenCV Mat
+    memcpy(image.data, fb->buf, fb->len);
+
+    // Release the frame buffer
+    esp_camera_fb_return(fb);
+
+    ESP_LOGI(TAG, "Image captured and stored as CV_8UC2 (RGB565)");
     return ESP_OK;
 }
 
 
+
 esp_err_t capture_and_save_image() {
+    static const char *TAG = "Camera";
+
+    cv::Mat frame = cv::Mat::zeros(96, 96, CV_8UC2);
+    get_frame(frame);
+
+    // Get the next available filename
+    char filename[32];
+    get_next_filename(filename);
+
+    // Open file for writing
+    FILE *file = fopen(filename, "w");
+    if (!file) {
+        ESP_LOGE(TAG, "Failed to open file for writing: %s", filename);
+        return ESP_FAIL;
+    }
+
+    // Write image data to file
+    fwrite(frame.data, 1, frame.total() * frame.elemSize(), file);
+    
+    // // Iterate over each pixel in the matrix
+    // for (int i = 0; i < frame.rows; ++i) {
+    //     for (int j = 0; j < frame.cols; ++j) {
+    //         cv::Vec2b vecpixel = frame.at<cv::Vec2b>(i, j);
+    //         uint16_t pixel = (static_cast<uint16_t>(vecpixel[0]) << 8) | vecpixel[1];
+    //         fprintf(file, "%d ", pixel);
+    //     }
+    //     fprintf(file, "\n");
+    // }
+
+    // fclose(file);
+    ESP_LOGI(TAG, "Image saved as: %s", filename);
+
+    return ESP_OK;
+}
+
+esp_err_t capture_and_save_image_nocv() {
     static const char *TAG = "Camera_Sample";
 
     // Capture a picture
@@ -228,7 +270,19 @@ void app_main(void)
     config_cam();
 
     if (mount_sd_card() == ESP_OK) {
-        capture_and_save_image();
+        for (int i = 0; i < 10; i++) {
+            // Capture a throwaway frame
+            camera_fb_t *pic = esp_camera_fb_get();
+            ESP_LOGI(TAG, "Captured throwaway frame: %d", i);
+            if (!pic) {
+                ESP_LOGE(TAG, "Camera capture failed");
+            }
+            esp_camera_fb_return(pic);
+        }
+
+
+        capture_and_save_image_nocv();
+        ESP_LOGI(TAG, "Image captured and saved to SD card");
 
         // Unmount the SD card
         esp_vfs_fat_sdmmc_unmount();
