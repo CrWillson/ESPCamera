@@ -1,7 +1,6 @@
 #pragma once
 
-// The number of times I have watched this program recompile over 1000 files has nearly driven me insane.
-// ~ Caleb Willson, 9/2024
+#include <cstdint>
 
 #define CAM_PIN_PWDN    32
 #define CAM_PIN_RESET   -1
@@ -22,20 +21,7 @@
 #define CAM_PIN_PCLK    22
 #define FLASH_GPIO_PIN  4
 
-// If this is a "1", then send the raw image from the ESP-32 over the serial port. If 0, don't.
-#define CALIBRATION_MODE 1
-
-#define PRINT_LINE_THRESH 0
-#define PRINT_STOP_THRESH 0
-#define PRINT_COMBINED_THRESH 1
-
-// The pin to write to.
-#define TX_GPIO GPIO_NUM_1
-
-// The UART device to use for control transmission.
-#define UART_NUM UART_NUM_0
-
 #define MOUNT_POINT "/sdcard"
-
-// The baudrate of the TX communication.
-constexpr uint32_t tx_baud = 500000;
+#define FILE_PREFIX "IMAGE"
+#define FILE_EXTENSION ".BIN"
+#define CONFIG_FILE "/sdcard/config.txt"
