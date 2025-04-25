@@ -4,6 +4,9 @@ Program to take a photo with the ESP32 camera and save it to the attached SD car
 
 Written by: Caleb Willson
 
+## Documentation
+Full Doxygen documentation can be found in [docs.html](./docs.html)
+
 ## Usage Instructions
 This program is written to take a photo on boot up and write it to the SD card. 
 
@@ -13,6 +16,14 @@ The file names follow the pattern: `IMAGE{image_number}.BIN`. The image number w
 When images are captured soon after the ESP32 boots up, they have a strange yellow tint to them, likely due to the camera not being warmed up yet. Obviously, this colour inaccuracy leads to problems with color calibration. To fix this, the program actually takes 10 photos in rapid succession then saves the 11th photo to the SD card. This helps midigate the yellow tint. If some yellow tint is still visible, try increasing the number of "throwaway" frames taken.
 
 ## Installation Instructions
+
+### Cloning from Github
+The repository and its submodules can be cloned with the following command.
+
+```bash
+git clone --recurse-submodules https://github.com/CrWillson/ESPPhotoProcessor.git
+```
+
 ### Requirements
 This project was tested using:
 
