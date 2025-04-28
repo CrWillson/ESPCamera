@@ -111,22 +111,29 @@ $(function(){initNavTree('index.html',''); initResizable(true); });
 <p>Program to take a photo with the ESP32 camera and save it to the attached SD card.</p>
 <p>Written by: Caleb Willson</p>
 <h1><a class="anchor" id="autotoc_md1"></a>
+Flashing the ESP32</h1>
+<dl class="section note"><dt>Note</dt><dd>When flashing the ESP32, the LCD screen on the ESP-32-CAM must be removed! The reason for this (we believe) is because some of the pins which the LCD screen talks to overlap with those which the ESP-32 uses during its flash sequence!</dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>If the ESP-32 is connected to the computer via USB, make sure that it is not connected to the Junior Robot’s PCB! We want to avoid a situation where the ESP-32 is being powered from both the programmer computer and the battery through the PCB!</dd></dl>
+<p>To build the program, click the small wrench icon on the bottom bar of the VSCode window.</p>
+<p>To flash the program, select the lightning bolt icon on the bottom bar of the VSCode window.</p>
+<p>To build, flash, then monitor the serial line, click the small flame icon on the bottom bar of the VSCode window.</p>
+<h1><a class="anchor" id="autotoc_md2"></a>
 Documentation</h1>
 <p>Full Doxygen documentation can be found in <a href="./docs.html">docs.html</a></p>
-<h1><a class="anchor" id="autotoc_md2"></a>
+<h1><a class="anchor" id="autotoc_md3"></a>
 Usage Instructions</h1>
 <p>This program is written to take a photo on boot up and write it to the SD card.</p>
 <p>The file names follow the pattern: <code>IMAGE{image_number}.BIN</code>. The image number will automatically increment and is stored on the SD card in the <code>CONFIG.TXT</code> file. If the config file is deleted, a new one will be created and the numbering will start at 0.</p>
-<h1><a class="anchor" id="autotoc_md3"></a>
+<h1><a class="anchor" id="autotoc_md4"></a>
 Yellow Tint Issue</h1>
 <p>When images are captured soon after the ESP32 boots up, they have a strange yellow tint to them, likely due to the camera not being warmed up yet. Obviously, this colour inaccuracy leads to problems with color calibration. To fix this, the program actually takes 10 photos in rapid succession then saves the 11th photo to the SD card. This helps midigate the yellow tint. If some yellow tint is still visible, try increasing the number of "throwaway" frames taken.</p>
-<h1><a class="anchor" id="autotoc_md4"></a>
+<h1><a class="anchor" id="autotoc_md5"></a>
 Installation Instructions</h1>
-<h2><a class="anchor" id="autotoc_md5"></a>
+<h2><a class="anchor" id="autotoc_md6"></a>
 Cloning from Github</h2>
 <p>The repository and its submodules can be cloned with the following command.</p>
 <div class="fragment"><div class="line">git clone --recurse-submodules https://github.com/CrWillson/ESPPhotoProcessor.git</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md6"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md7"></a>
 Requirements</h2>
 <p>This project was tested using:</p>
 <table class="markdownTable">
@@ -148,7 +155,7 @@ Requirements</h2>
 <blockquote class="doxtable">
 <p>GCC, Cmake, and git should be installed with the default options to ensure the greatest chance of compatability. Any custom settings in these programs have not been tested or documented. </p>
 </blockquote>
-<h2><a class="anchor" id="autotoc_md7"></a>
+<h2><a class="anchor" id="autotoc_md8"></a>
 ESP-IDF Tools Setup</h2>
 <p>To set up the ESP-IDF toolchain:</p>
 <ol type="1">
@@ -169,7 +176,7 @@ ESP-IDF Tools Setup</h2>
 <p>If all of the options were kept as the default, there should be two important filepaths to remember: </p><div class="fragment"><div class="line"> (bash)</div>
 <div class="line">C:\Espressif\frameworks\esp-idf-v5.3.1-2</div>
 <div class="line">C:\Users\USERNAME\.espressif</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md8"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md9"></a>
 ESP-IDF VSCode Extension Setup</h2>
 <p>To set up the ESP-IDF VSCode extension:</p>
 <ol type="1">

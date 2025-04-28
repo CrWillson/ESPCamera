@@ -20,7 +20,7 @@ var searchData=
   ['camera_2ehpp_17',['camera.hpp',['../camera_8hpp.html',1,'']]],
   ['capture_5fand_5fsave_5fimage_18',['capture_and_save_image',['../namespace_camera.html#ae0396087735b3254fa78879f5bde69b8',1,'Camera']]],
   ['capture_5fand_5fsave_5fimage_5fnocv_19',['capture_and_save_image_nocv',['../namespace_camera.html#a8cf3b3a41c97f5ef546384bad658370e',1,'Camera']]],
-  ['cloning_20from_20github_20',['Cloning from Github',['../index.html#autotoc_md5',1,'']]],
+  ['cloning_20from_20github_20',['Cloning from Github',['../index.html#autotoc_md6',1,'']]],
   ['config_5fcam_21',['config_cam',['../namespace_camera.html#a1e2b3adc48213906511fedbd72f5dd5c',1,'Camera']]],
   ['config_5ffile_22',['CONFIG_FILE',['../main_8cpp.html#a42bf63540ee0039a3a23db1b5ec3202b',1,'CONFIG_FILE:&#160;main.cpp'],['../constants_8hpp.html#a42bf63540ee0039a3a23db1b5ec3202b',1,'CONFIG_FILE:&#160;constants.hpp']]],
   ['constants_2ehpp_23',['constants.hpp',['../constants_8hpp.html',1,'']]]

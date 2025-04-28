@@ -4,6 +4,22 @@ Program to take a photo with the ESP32 camera and save it to the attached SD car
 
 Written by: Caleb Willson
 
+## Flashing the ESP32
+
+> [!NOTE]
+> When flashing the ESP32, the LCD screen on the ESP-32-CAM must be removed!
+> The reason for this (we believe) is because some of the pins which the LCD screen talks to overlap with those which the ESP-32 uses during its flash sequence! 
+
+> [!WARNING]
+> If the ESP-32 is connected to the computer via USB, make sure that it is not connected to the Junior Robot’s PCB! 
+> We want to avoid a situation where the ESP-32 is being powered from both the programmer computer and the battery through the PCB!
+
+To build the program, click the small wrench icon on the bottom bar of the VSCode window.
+
+To flash the program, select the lightning bolt icon on the bottom bar of the VSCode window.
+
+To build, flash, then monitor the serial line, click the small flame icon on the bottom bar of the VSCode window.
+
 ## Documentation
 Full Doxygen documentation can be found in [docs.html](./docs.html)
 
